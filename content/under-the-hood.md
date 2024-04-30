@@ -48,10 +48,11 @@ Git stores everything under the .git folder in your repository. In fact, **the
 Previously when you wrote the commit messages using your text editor, they
 were in fact saved to `COMMIT_EDITMSG`.
 
-Each commit in Git is stored as a "blob". This blob contains information about
-the author and the commit message. The blob references another blob that lists
-the files present in the directory at the time and references blobs that record
-the state of each file.
+Each commit in Git is stored as an object. This object contains information about
+the author and the commit message. A *commit object* references a *tree object* that lists
+the files present in the directory at the time.
+Tree objects reference *blob* objects (that record the state of each file)
+or other tree objects.
 
 Commits are referenced by a SHA-1 hash (a 40-character hexadecimal string).
 
@@ -62,10 +63,10 @@ Commits are referenced by a SHA-1 hash (a 40-character hexadecimal string).
 States of a Git file. Image from the [Pro Git book](https://git-scm.com/book/). License CC BY 3.0.
 ```
 
-Once you have several commits, each commit blob also links to the hash of the
-previous commit. The commits form a [directed acyclic
-graph](http://eagain.net/articles/git-for-computer-scientists/) (do not worry
-if the term is not familiar).
+Once you have several commits, each commit object also links to the hash of the
+previous commit(s) (there is more than one previous commit for for merge commits).
+The commits form a [directed acyclic graph](http://eagain.net/articles/git-for-computer-scientists/)
+(do not worry if the term is not familiar).
 
 ```{figure} img/commits-and-parents.png
 :alt: A commit and its parents
@@ -179,6 +180,57 @@ $ git branch
   idea-5
   main
 ```
+
+## Demonstration: If you add it, you don't lose it (for a while)
+
+A common way to (apparently) lose work
+is to use `git add` indiscriminately.
+
+You make some changes to a file, 
+(let us call this version A)
+you `git add` them,
+then you make some other changes 
+(let us call this version B)
+and you `git add` those again.
+
+Now version A is apparently lost,
+and if we realize that we need it back
+we typically click nervously on the "undo" arrow of our editor.
+
+But fear not! Try this.
+1. Create a file named `test-add` with the following command:
+```
+echo 'Once a file has been git added, it is hard to lose!' > test-add
+```
+1. Add it to the repository
+```console
+$ git add test-add
+```
+1. Now change the content of the file to be 
+```
+Ops
+```
+1. And repeat the add command
+```console
+$ git add test-add
+```
+1. Apparently we have lost the previous version of the file.
+But it is actually there, stored in a *dangling* blob object
+(which is not referenced by any other objects)
+We can see this with the command `fsck`:
+```console
+$ git fsck
+Checking object directories: 100% (256/256), done.
+dangling blob dc3b15f60045eea7a87639436ed75021130579e0
+```
+We can see the content of that blob 
+by passing its hash (shortened for convenience) 
+to the `git cat-file -p` command:
+```console
+$ git cat-file -p dc3b
+Once a file has been git added, it is hard to lose!
+```
+
 
 ```{discussion}
 Discuss the findings with other course participants.
